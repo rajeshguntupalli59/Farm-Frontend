@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getMyOrders } from '../../../lib/api'
+import { getMyOrders, cancelMyOrder } from '../../../lib/api'
 
 const STATUS = {
   PENDING:   { label: 'Pending',   color: '#92400e', bg: '#fef3c7' },
@@ -39,6 +39,16 @@ export default function CustomerPortalPage() {
     localStorage.removeItem('customerToken')
     localStorage.removeItem('customerData')
     router.push('/')
+  }
+
+  const handleCancel = async (orderId) => {
+    if (!confirm('Cancel this order?')) return
+    try {
+      await cancelMyOrder(orderId)
+      fetchOrders()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order')
+    }
   }
 
   const whatsApp = (order) => {
@@ -207,13 +217,25 @@ export default function CustomerPortalPage() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                    <div style={{ paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
+                      <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 8 }}>
                         {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                      <button onClick={() => whatsApp(order)} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                        💬 Query
-                      </button>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button onClick={() => whatsApp(order)} style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                          💬 Query
+                        </button>
+                        {order.shipment?.trackingCode && (
+                          <button onClick={() => router.push(`/track/${order.shipment.trackingCode}`)} style={{ flex: 1, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                            🚚 Track
+                          </button>
+                        )}
+                        {['PENDING', 'CONFIRMED'].includes(order.status) && (
+                          <button onClick={() => handleCancel(order.id)} style={{ flex: 1, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                            ✕ Cancel
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )

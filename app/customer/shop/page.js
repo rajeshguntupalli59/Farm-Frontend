@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getPublicProducts, placeCustomerOrder } from '../../../lib/api'
+import { getPublicProducts, getPublicAnimals, placeCustomerOrder } from '../../../lib/api'
 
 const UPI_ID = '8897132032@sbi'
 const UPI_NAME = 'Kruthik Farm'
@@ -15,6 +15,7 @@ const UPI_APPS = [
 export default function CustomerShopPage() {
   const router = useRouter()
   const [products, setProducts] = useState([])
+  const [animals, setAnimals] = useState([])
   const [categories, setCategories] = useState([])
   const [catFilter, setCatFilter] = useState('')
   const [search, setSearch] = useState('')
@@ -39,9 +40,13 @@ export default function CustomerShopPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await getPublicProducts()
-      const available = (res.data.products || []).filter(p => p.isAvailable)
+      const [prodRes, animalRes] = await Promise.all([
+        getPublicProducts(),
+        getPublicAnimals().catch(() => ({ data: { animals: [] } }))
+      ])
+      const available = (prodRes.data.products || []).filter(p => p.isAvailable)
       setProducts(available)
+      setAnimals((animalRes.data.animals || []).filter(a => a.status === 'AVAILABLE'))
       const seen = new Set(); const cats = []
       available.forEach(p => { if (p.category && !seen.has(p.category.id)) { seen.add(p.category.id); cats.push(p.category) } })
       setCategories(cats)
@@ -143,12 +148,53 @@ export default function CustomerShopPage() {
                     </div>
                   </div>
                   {product.description && <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, marginBottom: 12, flex: 1 }}>{product.description}</p>}
-                  <button onClick={() => openOrder(product)} style={{ width: '100%', background: '#166534', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 'auto' }}>
-                    🛒 Order Now
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                    <button onClick={() => openOrder(product)} style={{ flex: 1, background: '#166534', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                      🛒 Order Now
+                    </button>
+                    <button onClick={() => window.open(`https://wa.me/918897132032?text=${encodeURIComponent(`Hi, I want to order: ${product.name} at ₹${product.price}/${product.unit}`)}`)}
+                      style={{ background: '#dcfce7', color: '#166534', border: 'none', borderRadius: 10, padding: '11px 14px', fontSize: 16, cursor: 'pointer' }}>
+                      💬
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Animals section */}
+        {animals.length > 0 && (
+          <div style={{ marginTop: '2.5rem' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#14532d', marginBottom: '1.25rem' }}>🐐 Livestock for Sale</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+              {animals.map(animal => (
+                <div key={animal.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  {animal.photoUrl
+                    ? <img src={animal.photoUrl} alt={animal.name} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: 120, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>
+                        {animal.type === 'GOAT' ? '🐐' : animal.type === 'SHEEP' ? '🐑' : animal.type === 'CHICKEN' ? '🐓' : '🐔'}
+                      </div>
+                  }
+                  <div style={{ padding: '1rem 1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{animal.name}</div>
+                        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                          {animal.type}{animal.breed ? ` · ${animal.breed}` : ''}{animal.weight ? ` · ${animal.weight}kg` : ''}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#166534' }}>₹{animal.price}</div>
+                    </div>
+                    {animal.description && <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>{animal.description}</p>}
+                    <button onClick={() => window.open(`https://wa.me/918897132032?text=${encodeURIComponent(`Hi, I'm interested in ${animal.name} (${animal.type}) at ₹${animal.price}`)}`)}
+                      style={{ width: '100%', background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                      💬 Enquire on WhatsApp
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
