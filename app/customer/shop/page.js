@@ -6,12 +6,6 @@ import { getPublicProducts, getPublicAnimals, placeCustomerOrder } from '../../.
 
 const UPI_ID = '8897132032@sbi'
 const UPI_NAME = 'Kruthik Farm'
-const UPI_APPS = [
-  { label: 'GPay',    bg: '#fff',    color: '#4285F4', letter: 'G', scheme: (pa, amt) => `tez://upi/pay?pa=${pa}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=Order` },
-  { label: 'PhonePe', bg: '#5f259f', color: '#fff',    letter: 'P', scheme: (pa, amt) => `phonepe://pay?pa=${pa}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=Order` },
-  { label: 'Paytm',   bg: '#002970', color: '#00b9f5', letter: 'P', scheme: (pa, amt) => `paytmmp://upi/pay?pa=${pa}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=Order` },
-  { label: 'BHIM',    bg: '#00a651', color: '#fff',    letter: 'B', scheme: (pa, amt) => `bhim://upi/pay?pa=${pa}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=Order` },
-]
 
 export default function CustomerShopPage() {
   const router = useRouter()
@@ -68,10 +62,6 @@ export default function CustomerShopPage() {
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to place order.')
     } finally { setPlacing(false) }
-  }
-
-  const openUpiApp = (scheme) => {
-    window.location.href = scheme(UPI_ID, total)
   }
 
   const filtered = products
@@ -326,22 +316,6 @@ export default function CustomerShopPage() {
                     <div style={{ fontSize: 15, fontWeight: 800, color: '#111827', letterSpacing: 0.3, marginBottom: 2 }}>{UPI_ID}</div>
                     <div style={{ fontSize: 12, color: '#9ca3af' }}>{UPI_NAME} · Rajesh</div>
                   </div>
-                </div>
-
-                {/* UPI app deep-link buttons (for mobile browsers) */}
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Or open directly</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 18 }}>
-                  {UPI_APPS.map(app => (
-                    <button key={app.label} onClick={() => openUpiApp(app.scheme)} style={{
-                      background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10,
-                      padding: '10px 6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5
-                    }}>
-                      <div style={{ width: 38, height: 38, borderRadius: 8, background: app.bg, border: '1.5px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: app.color }}>
-                        {app.letter}
-                      </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{app.label}</span>
-                    </button>
-                  ))}
                 </div>
 
                 <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400e', marginBottom: 18 }}>
