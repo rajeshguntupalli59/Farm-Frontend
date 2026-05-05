@@ -7,7 +7,7 @@ import { useLang } from '../lib/lang'
 export default function WelcomePage() {
   const router = useRouter()
   const { t, lang, toggleLang } = useLang()
-  const [screen, setScreen] = useState('checking') // checking | welcome | staffLogin
+  const [screen, setScreen] = useState('checking')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,8 +23,7 @@ export default function WelcomePage() {
 
   const handleStaffLogin = async () => {
     if (!phone || !password) { setError('Phone and password required'); return }
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const res = await login({ phone, password })
       localStorage.setItem('token', res.data.token)
@@ -37,144 +36,159 @@ export default function WelcomePage() {
 
   if (screen === 'checking') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#166534' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0fdf4' }}>
         <div style={{ fontSize: 48 }}>🐐</div>
       </div>
     )
   }
 
-  // ── WELCOME SCREEN ──────────────────────────────────────────────────────────
-  if (screen === 'welcome') {
-    return (
-      <div style={{
-        minHeight: '100vh', background: '#166534',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '1.5rem', position: 'relative'
-      }}>
-        {/* Language toggle */}
-        <button onClick={toggleLang} style={{
-          position: 'absolute', top: 20, right: 20,
-          background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)',
-          color: '#fff', borderRadius: 20, padding: '6px 16px',
-          cursor: 'pointer', fontSize: 14, fontWeight: 700
-        }}>
-          {lang === 'en' ? 'తె' : 'EN'}
-        </button>
-
-        {/* Logo & title */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontSize: 72, marginBottom: 10 }}>🐐</div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>
-            {t.appName}
-          </h1>
-          <p style={{ color: '#86efac', fontSize: 14, marginTop: 6 }}>కృతిక్ ఫార్మ్ · Goat Farm</p>
-        </div>
-
-        {/* Customer button (white, primary) */}
-        <button
-          onClick={() => router.push('/customer')}
-          style={{
-            width: '100%', maxWidth: 400,
-            background: '#fff', border: 'none', borderRadius: 16,
-            padding: '18px 20px', marginBottom: 14,
-            display: 'flex', alignItems: 'center', gap: 16,
-            cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            textAlign: 'left'
-          }}
-        >
-          <span style={{ fontSize: 36 }}>🛒</span>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#14532d' }}>Customer Portal</div>
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Browse products & view orders</div>
-          </div>
-          <span style={{ marginLeft: 'auto', fontSize: 24, color: '#166534' }}>›</span>
-        </button>
-
-        {/* Staff button (translucent) */}
-        <button
-          onClick={() => setScreen('staffLogin')}
-          style={{
-            width: '100%', maxWidth: 400,
-            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: 16, padding: '18px 20px',
-            display: 'flex', alignItems: 'center', gap: 16,
-            cursor: 'pointer', textAlign: 'left'
-          }}
-        >
-          <span style={{ fontSize: 36 }}>🔑</span>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Farm Staff Login</div>
-            <div style={{ fontSize: 12, color: '#86efac', marginTop: 2 }}>Owner · Manager · Employee</div>
-          </div>
-          <span style={{ marginLeft: 'auto', fontSize: 24, color: '#86efac' }}>›</span>
-        </button>
-      </div>
-    )
-  }
-
-  // ── STAFF LOGIN SCREEN ──────────────────────────────────────────────────────
   return (
-    <div style={{
-      minHeight: '100vh', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '1.5rem'
-    }}>
-      <div style={{ width: '100%', maxWidth: 420 }}>
-        {/* Back button */}
-        <button onClick={() => { setScreen('welcome'); setError('') }} style={{
-          background: 'none', border: 'none', color: '#166534',
-          fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 16, padding: 0
-        }}>
-          ← Back
-        </button>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
 
-        <div style={{ background: '#fff', borderRadius: 20, padding: '2.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🔑</div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#14532d', margin: 0 }}>Staff Login</h1>
-            <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Owner · Manager · Employee</p>
-          </div>
-
-          {error && (
-            <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '0.75rem 1rem', fontSize: 14, marginBottom: '1rem' }}>
-              {error}
-            </div>
-          )}
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label>{t.phone}</label>
-            <input
-              type="tel" placeholder="9876543210"
-              value={phone} onChange={e => setPhone(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleStaffLogin()}
-              autoComplete="tel"
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label>{t.password}</label>
-            <input
-              type="password" placeholder="••••••••"
-              value={password} onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleStaffLogin()}
-              autoComplete="current-password"
-            />
-          </div>
-
-          <button
-            onClick={handleStaffLogin} disabled={loading}
-            className="btn-primary"
-            style={{ width: '100%', padding: '0.875rem', fontSize: 16, borderRadius: 10 }}
-          >
-            {loading ? 'Logging in...' : t.loginBtn || 'Login'}
-          </button>
-
-          <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12, marginTop: '1.5rem' }}>
-            పశుబజార్ © 2025 • India
-          </p>
+      {/* Top nav bar */}
+      <header style={{
+        background: '#fff', borderBottom: '1px solid #e5e7eb',
+        padding: '0 2rem', height: 64,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 28 }}>🐐</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: '#14532d' }}>{t.appName}</span>
         </div>
-      </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={toggleLang} style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0',
+            color: '#166534', borderRadius: 8, padding: '6px 16px',
+            cursor: 'pointer', fontSize: 13, fontWeight: 700
+          }}>
+            {lang === 'en' ? 'తెలుగు' : 'English'}
+          </button>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem' }}>
+
+        {screen === 'welcome' ? (
+          <div style={{ width: '100%', maxWidth: 960 }}>
+            {/* Hero text */}
+            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+              <h1 style={{ fontSize: 42, fontWeight: 900, color: '#14532d', margin: 0, lineHeight: 1.15 }}>
+                Welcome to {t.appName}
+              </h1>
+              <p style={{ color: '#6b7280', fontSize: 17, marginTop: 12 }}>
+                Farm management & customer portal — all in one place
+              </p>
+            </div>
+
+            {/* Two cards side by side */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', maxWidth: 780, margin: '0 auto' }}>
+
+              {/* Customer card */}
+              <div style={{
+                background: '#fff', borderRadius: 20, padding: '2.5rem',
+                border: '1px solid #e5e7eb', boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
+              }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>🛒</div>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#14532d', margin: '0 0 8px' }}>Customer Portal</h2>
+                <p style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
+                  Browse fresh farm products, place orders, and track deliveries — register with just your phone number.
+                </p>
+                <button
+                  onClick={() => router.push('/customer')}
+                  style={{
+                    width: '100%', background: '#166534', color: '#fff',
+                    border: 'none', borderRadius: 12, padding: '14px',
+                    fontSize: 15, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Customer Login →
+                </button>
+              </div>
+
+              {/* Staff card */}
+              <div style={{
+                background: '#fff', borderRadius: 20, padding: '2.5rem',
+                border: '1px solid #e5e7eb', boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+                display: 'flex', flexDirection: 'column'
+              }}>
+                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                  <div style={{ fontSize: 56, marginBottom: 16 }}>🔑</div>
+                  <h2 style={{ fontSize: 22, fontWeight: 800, color: '#14532d', margin: '0 0 8px' }}>Staff Login</h2>
+                  <p style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.6 }}>Owner · Manager · Employee</p>
+                </div>
+
+                {error && (
+                  <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 14 }}>
+                    {error}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+                    {t.phone}
+                  </label>
+                  <input
+                    type="tel" placeholder="10-digit mobile number"
+                    value={phone} onChange={e => setPhone(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleStaffLogin()}
+                    autoComplete="tel"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+                    {t.password}
+                  </label>
+                  <input
+                    type="password" placeholder="••••••••"
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleStaffLogin()}
+                    autoComplete="current-password"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <button
+                  onClick={handleStaffLogin} disabled={loading}
+                  className="btn-primary"
+                  style={{ width: '100%', padding: '14px', fontSize: 15, borderRadius: 12, marginTop: 'auto' }}
+                >
+                  {loading ? 'Logging in...' : 'Login to Dashboard →'}
+                </button>
+              </div>
+            </div>
+
+            {/* Feature highlights */}
+            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '3rem', flexWrap: 'wrap' }}>
+              {[
+                { icon: '🐐', text: 'Animal & Livestock' },
+                { icon: '📦', text: 'Products & Orders' },
+                { icon: '🌾', text: 'Inventory & Feed' },
+                { icon: '💉', text: 'Health Records' },
+                { icon: '🚚', text: 'Delivery Tracking' },
+                { icon: '📊', text: 'Reports & Analytics' },
+              ].map(f => (
+                <div key={f.text} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: '#fff', border: '1px solid #e5e7eb',
+                  borderRadius: 10, padding: '8px 16px', fontSize: 13,
+                  color: '#374151', fontWeight: 500
+                }}>
+                  <span>{f.icon}</span><span>{f.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </main>
+
+      {/* Footer */}
+      <footer style={{ textAlign: 'center', padding: '1.25rem', color: '#9ca3af', fontSize: 13, borderTop: '1px solid #f3f4f6' }}>
+        పశుబజార్ © 2025 • Kruthik Farm • India
+      </footer>
     </div>
   )
 }
