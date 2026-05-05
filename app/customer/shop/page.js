@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import QRCode from 'react-qr-code'
 import { getPublicProducts, getPublicAnimals, placeCustomerOrder } from '../../../lib/api'
 
 const UPI_ID = '8897132032@sbi'
@@ -307,37 +308,44 @@ export default function CustomerShopPage() {
                   <div style={{ fontWeight: 800, fontSize: 18, color: '#14532d' }}>Pay via UPI</div>
                 </div>
 
-                {/* Amount box */}
-                <div style={{ background: '#166534', borderRadius: 14, padding: '20px', textAlign: 'center', marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, color: '#86efac', marginBottom: 4 }}>Amount to Pay</div>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: '#fff' }}>₹{total}</div>
+                {/* QR code + amount side by side */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20, alignItems: 'center', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 16, padding: '1.5rem', marginBottom: 18 }}>
+                  {/* QR */}
+                  <div style={{ background: '#fff', padding: 12, borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                    <QRCode
+                      value={`upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${total}&cu=INR&tn=Order`}
+                      size={140}
+                      style={{ display: 'block' }}
+                    />
+                  </div>
+                  {/* Info */}
+                  <div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>SCAN & PAY</div>
+                    <div style={{ fontSize: 30, fontWeight: 900, color: '#166534', marginBottom: 10 }}>₹{total}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>UPI ID</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#111827', letterSpacing: 0.3, marginBottom: 2 }}>{UPI_ID}</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{UPI_NAME} · Rajesh</div>
+                  </div>
                 </div>
 
-                {/* UPI ID */}
-                <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px', textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>UPI ID</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', letterSpacing: 0.5 }}>{UPI_ID}</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{UPI_NAME} · Rajesh</div>
-                </div>
-
-                {/* UPI app buttons */}
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>Pay with</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+                {/* UPI app deep-link buttons (for mobile browsers) */}
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Or open directly</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 18 }}>
                   {UPI_APPS.map(app => (
                     <button key={app.label} onClick={() => openUpiApp(app.scheme)} style={{
-                      background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12,
-                      padding: '14px 8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6
+                      background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10,
+                      padding: '10px 6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5
                     }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 10, background: app.bg, border: '1.5px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: app.color }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 8, background: app.bg, border: '1.5px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: app.color }}>
                         {app.letter}
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>{app.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{app.label}</span>
                     </button>
                   ))}
                 </div>
 
-                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400e', marginBottom: 20 }}>
-                  💡 Tap your UPI app to pay, then come back and click <strong>"I've Paid"</strong> to confirm your order.
+                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400e', marginBottom: 18 }}>
+                  💡 Scan the QR with any UPI app, complete the payment, then click <strong>"I've Paid"</strong> to confirm your order.
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>
