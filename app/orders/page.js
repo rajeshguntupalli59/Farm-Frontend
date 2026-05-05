@@ -78,7 +78,7 @@ export default function OrdersPage() {
     if (!payAmount || isNaN(payAmount)) return
     setPayingSaving(true)
     try {
-      const newPaid = Math.min(parseFloat(payAmount), payModal.totalPrice)
+      const newPaid = Math.min((payModal.paidAmount || 0) + parseFloat(payAmount), payModal.totalPrice)
       await updateOrder(payModal.id, { paidAmount: newPaid })
       setPayModal(null)
       fetchOrders()

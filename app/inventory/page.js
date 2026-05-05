@@ -203,7 +203,7 @@ export default function InventoryPage() {
 
       {/* Adjust Modal */}
       {adjustItem && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setAdjustItem(null)}>
           <div className="modal-box" style={{ maxWidth: 380 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--green-900)', marginBottom: '0.75rem' }}>
               {adjustAction === 'ADD' ? '+ Add Stock' : '- Use Stock'}

@@ -1,9 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import axios from 'axios'
-
-const API_URL = 'http://localhost:5000/api'
+import { trackShipmentPublic } from '../../../lib/api'
 
 // Status order used for timeline progression
 const STATUS_ORDER = [
@@ -66,7 +64,7 @@ export default function TrackPage() {
   const fetchTrack = async () => {
     if (!code) return
     try {
-      const res = await axios.get(`${API_URL}/delivery/shipments/track/${code}`)
+      const res = await trackShipmentPublic(code)
       setShipment(res.data.shipment)
       setNotFound(false)
       setError(null)

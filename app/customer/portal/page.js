@@ -57,7 +57,7 @@ export default function CustomerPortalPage() {
   if (!customer) return null
 
   const totalSpent = orders.reduce((s, o) => s + (o.paidAmount || 0), 0)
-  const totalBalance = orders.reduce((s, o) => s + Math.max(0, (o.totalPrice || 0) - (o.paidAmount || 0)), 0)
+  const totalBalance = orders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + Math.max(0, (o.totalPrice || 0) - (o.paidAmount || 0)), 0)
 
   return (
     <div className="min-h-screen bg-green-50">
