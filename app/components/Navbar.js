@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { key: 'employees',    href: '/employees',  icon: '👷', roles: ['OWNER'] },
   { key: 'delivery',     href: '/delivery',   icon: '🚚', roles: ['OWNER','MANAGER'] },
   { key: 'catalog',      href: '/catalog',    icon: '🌐', roles: ['OWNER','MANAGER','EMPLOYEE'] },
+  { key: 'customerPortal', href: '/customer', icon: '🛍️', roles: ['OWNER','MANAGER','EMPLOYEE'] },
 ]
 
 export default function Navbar() {

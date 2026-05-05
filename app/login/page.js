@@ -105,9 +105,17 @@ export default function LoginPage() {
             {loading ? (t.loggingIn || 'Logging in...') : (t.loginBtn || t.login || 'Login')}
           </button>
 
-          <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12, marginTop: '1.5rem' }}>
-            పశుబజార్ © 2025 • India
-          </p>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <p style={{ color: '#9ca3af', fontSize: 12, marginBottom: 8 }}>పశుబజార్ © 2025 • India</p>
+            <a href="/customer" style={{
+              display: 'inline-block', background: '#f0fdf4',
+              border: '1px solid #86efac', color: '#166534',
+              borderRadius: 8, padding: '8px 20px',
+              fontSize: 14, fontWeight: 600, textDecoration: 'none'
+            }}>
+              🛍️ Customer Login
+            </a>
+          </div>
         </div>
       </div>
     </div>
