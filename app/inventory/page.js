@@ -24,7 +24,7 @@ export default function InventoryPage() {
   const [adjustAction, setAdjustAction] = useState('ADD')
   const [adjustQty, setAdjustQty] = useState('')
   const [adjustNote, setAdjustNote] = useState('')
-  const [form, setForm] = useState({ name: '', category: 'FEED', unit: 'KG', quantity: '', minQuantity: '', costPerUnit: '', supplier: '', note: '' })
+  const [form, setForm] = useState({ name: '', category: 'FEED', unit: 'KG', quantity: '', minQuantity: '', costPerUnit: '', supplier: '', note: '', expiryDate: '' })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -42,9 +42,9 @@ export default function InventoryPage() {
     if (!form.name || !form.quantity || !form.costPerUnit || !form.minQuantity) return
     setSaving(true)
     try {
-      await addInventoryItem({ ...form, quantity: parseFloat(form.quantity), minQuantity: parseFloat(form.minQuantity), costPerUnit: parseFloat(form.costPerUnit) })
+      await addInventoryItem({ ...form, quantity: parseFloat(form.quantity), minQuantity: parseFloat(form.minQuantity), costPerUnit: parseFloat(form.costPerUnit), expiryDate: form.expiryDate || null })
       setShowAdd(false)
-      setForm({ name: '', category: 'FEED', unit: 'KG', quantity: '', minQuantity: '', costPerUnit: '', supplier: '', note: '' })
+      setForm({ name: '', category: 'FEED', unit: 'KG', quantity: '', minQuantity: '', costPerUnit: '', supplier: '', note: '', expiryDate: '' })
       fetchInventory()
     } catch (err) { alert(err.response?.data?.message || 'Failed') }
     finally { setSaving(false) }
@@ -113,10 +113,14 @@ export default function InventoryPage() {
             </div>
           ) : filtered.map(item => {
             const isLow = item.quantity <= item.minQuantity
+            const expiry = item.expiryDate ? new Date(item.expiryDate) : null
+            const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null
+            const isExpiringSoon = daysToExpiry !== null && daysToExpiry <= 30 && daysToExpiry > 0
+            const isExpired = daysToExpiry !== null && daysToExpiry <= 0
             return (
               <div key={item.id} style={{
                 background: '#fff', borderRadius: 14, padding: '1rem 1.25rem',
-                boxShadow: 'var(--shadow-sm)', border: `1px solid ${isLow ? '#fca5a5' : 'var(--gray-100)'}`
+                boxShadow: 'var(--shadow-sm)', border: `1px solid ${isLow ? '#fca5a5' : isExpiringSoon || isExpired ? '#fde68a' : 'var(--gray-100)'}`
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: canEdit ? 10 : 0 }}>
                   <span style={{ fontSize: 28 }}>{CAT_EMOJI[item.category]}</span>
@@ -128,6 +132,11 @@ export default function InventoryPage() {
                     <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
                       Min: {item.minQuantity} {item.unit} • Cost: ₹{item.costPerUnit}/{item.unit}
                     </div>
+                    {expiry && (
+                      <div style={{ fontSize: 12, fontWeight: 600, color: isExpired ? '#dc2626' : isExpiringSoon ? '#92400e' : 'var(--gray-400)', marginTop: 2 }}>
+                        {isExpired ? '❌ Expired' : isExpiringSoon ? `⏰ Expires in ${daysToExpiry}d` : `📅 Exp: ${expiry.toLocaleDateString('en-IN')}`}
+                      </div>
+                    )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: isLow ? '#dc2626' : '#166534' }}>
@@ -193,6 +202,7 @@ export default function InventoryPage() {
               <div><label>Cost/unit (₹) *</label><input type="number" value={form.costPerUnit} onChange={e => setForm(f => ({...f, costPerUnit: e.target.value}))} /></div>
             </div>
             <div style={{ marginTop: '0.75rem' }}><label>{t.supplier} ({t.optional})</label><input value={form.supplier} onChange={e => setForm(f => ({...f, supplier: e.target.value}))} /></div>
+            <div style={{ marginTop: '0.75rem' }}><label>Expiry Date ({t.optional})</label><input type="date" value={form.expiryDate} onChange={e => setForm(f => ({...f, expiryDate: e.target.value}))} /></div>
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
               <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1 }}>{t.cancel}</button>
               <button onClick={handleAdd} disabled={saving} className="btn-primary" style={{ flex: 1 }}>{saving ? t.saving : t.save}</button>

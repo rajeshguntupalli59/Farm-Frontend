@@ -208,6 +208,44 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Upcoming health alerts */}
+        {isManager && data?.upcomingHealthAlerts?.length > 0 && (
+          <div style={S.section}>
+            <div style={{ ...S.sectionTitle, color: '#7c3aed' }}>💉 Upcoming Health Care (next 14 days)</div>
+            {data.upcomingHealthAlerts.map(h => (
+              <div key={h.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '0.5rem 0.75rem', background: '#f5f3ff',
+                borderRadius: 8, marginBottom: 6, border: '1px solid #ddd6fe', fontSize: 13
+              }}>
+                <span>🐐 <strong>{h.animal?.name}</strong> ({h.animal?.type}) — {h.type}{h.medicine ? ` · ${h.medicine}` : ''}</span>
+                <span style={{ fontWeight: 700, color: '#7c3aed' }}>
+                  {new Date(h.nextDueDate).toLocaleDateString('en-IN')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Expiring inventory */}
+        {isManager && data?.expiringInventory?.length > 0 && (
+          <div style={S.section}>
+            <div style={{ ...S.sectionTitle, color: '#dc2626' }}>⏰ Expiring Inventory (next 30 days)</div>
+            {data.expiringInventory.map(inv => (
+              <div key={inv.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '0.5rem 0.75rem', background: '#fef2f2',
+                borderRadius: 8, marginBottom: 6, border: '1px solid #fecaca', fontSize: 13
+              }}>
+                <span>💊 <strong>{inv.name}</strong> — {inv.quantity} {inv.unit}</span>
+                <span style={{ fontWeight: 700, color: '#dc2626' }}>
+                  {new Date(inv.expiryDate).toLocaleDateString('en-IN')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Quick actions */}
         <div style={S.section}>
           <div style={S.sectionTitle}>{t.quickActions}</div>

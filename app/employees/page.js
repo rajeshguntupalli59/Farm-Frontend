@@ -20,7 +20,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editEmp, setEditEmp] = useState(null)
-  const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'EMPLOYEE' })
+  const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'EMPLOYEE', salary: '' })
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
 
@@ -35,15 +35,15 @@ export default function EmployeesPage() {
     finally { setLoading(false) }
   }
 
-  const openAdd = () => { setForm({ name: '', phone: '', password: '', role: 'EMPLOYEE' }); setEditEmp(null); setShowAdd(true) }
-  const openEdit = (emp) => { setForm({ name: emp.name, phone: emp.phone, password: '', role: emp.role }); setEditEmp(emp); setShowAdd(true) }
+  const openAdd = () => { setForm({ name: '', phone: '', password: '', role: 'EMPLOYEE', salary: '' }); setEditEmp(null); setShowAdd(true) }
+  const openEdit = (emp) => { setForm({ name: emp.name, phone: emp.phone, password: '', role: emp.role, salary: emp.salary != null ? String(emp.salary) : '' }); setEditEmp(emp); setShowAdd(true) }
 
   const handleSave = async () => {
     if (!form.name || !form.phone || (!editEmp && !form.password)) return
     setSaving(true)
     try {
-      if (editEmp) await updateEmployee(editEmp.id, { name: form.name, phone: form.phone, role: form.role })
-      else await addEmployee(form)
+      if (editEmp) await updateEmployee(editEmp.id, { name: form.name, phone: form.phone, role: form.role, salary: form.salary !== '' ? form.salary : null })
+      else await addEmployee({ ...form, salary: form.salary !== '' ? form.salary : undefined })
       setShowAdd(false)
       fetchEmployees()
     } catch (err) {
@@ -95,6 +95,11 @@ export default function EmployeesPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{emp.name}</div>
                     <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>📱 {emp.phone}</div>
+                    {emp.salary != null && (
+                      <div style={{ fontSize: 12, color: '#166534', fontWeight: 600, marginTop: 2 }}>
+                        💰 ₹{emp.salary.toLocaleString('en-IN')}/month
+                      </div>
+                    )}
                   </div>
                   <span style={{ background: rc.bg, color: rc.color, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>
                     {emp.role}
@@ -130,6 +135,7 @@ export default function EmployeesPage() {
             <div><label>{t.name} *</label><input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} /></div>
             <div style={{ marginTop: '0.75rem' }}><label>{t.phone} *</label><input type="tel" value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} /></div>
             {!editEmp && <div style={{ marginTop: '0.75rem' }}><label>{t.password} *</label><input type="password" value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))} /></div>}
+            <div style={{ marginTop: '0.75rem' }}><label>Salary ₹/month ({t.optional})</label><input type="number" value={form.salary} onChange={e => setForm(f => ({...f, salary: e.target.value}))} placeholder="e.g. 12000" /></div>
             <div style={{ marginTop: '0.75rem' }}>
               <label>{t.role}</label>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
