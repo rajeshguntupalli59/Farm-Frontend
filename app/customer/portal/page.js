@@ -4,13 +4,10 @@ import { useRouter } from 'next/navigation'
 import { getMyOrders } from '../../../lib/api'
 
 const STATUS = {
-  PENDING:    { label: 'Pending',    te: 'పెండింగ్',           color: 'bg-yellow-100 text-yellow-800' },
-  CONFIRMED:  { label: 'Confirmed',  te: 'నిర్ధారించబడింది',   color: 'bg-blue-100 text-blue-800' },
-  PROCESSING: { label: 'Processing', te: 'ప్రాసెసింగ్',        color: 'bg-purple-100 text-purple-800' },
-  SHIPPED:    { label: 'Shipped',    te: 'పంపబడింది',          color: 'bg-indigo-100 text-indigo-800' },
-  DELIVERED:  { label: 'Delivered',  te: 'డెలివరీ అయింది',    color: 'bg-green-100 text-green-800' },
-  COMPLETED:  { label: 'Completed',  te: 'పూర్తయింది',        color: 'bg-green-100 text-green-800' },
-  CANCELLED:  { label: 'Cancelled',  te: 'రద్దు చేయబడింది',   color: 'bg-red-100 text-red-800' },
+  PENDING:   { label: 'Pending',   color: '#92400e', bg: '#fef3c7' },
+  CONFIRMED: { label: 'Confirmed', color: '#1d4ed8', bg: '#dbeafe' },
+  COMPLETED: { label: 'Completed', color: '#166534', bg: '#dcfce7' },
+  CANCELLED: { label: 'Cancelled', color: '#dc2626', bg: '#fee2e2' },
 }
 
 export default function CustomerPortalPage() {
@@ -18,9 +15,9 @@ export default function CustomerPortalPage() {
   const [customer, setCustomer] = useState(null)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('ALL')
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
     const token = localStorage.getItem('customerToken')
     const data = localStorage.getItem('customerData')
     if (!token || !data) { router.replace('/customer'); return }
@@ -33,24 +30,19 @@ export default function CustomerPortalPage() {
       const res = await getMyOrders()
       setOrders(res.data.orders || [])
     } catch {
-      // fall back to cached data
       const data = localStorage.getItem('customerData')
       if (data) setOrders(JSON.parse(data).orders || [])
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const handleLogout = () => {
     localStorage.removeItem('customerToken')
     localStorage.removeItem('customerData')
-    router.push('/customer')
+    router.push('/')
   }
 
   const whatsApp = (order) => {
-    const msg = encodeURIComponent(
-      `Hi, I'm ${customer?.name} (${customer?.phone}). Query about order #${order.id} for ${order.product?.name} placed on ${new Date(order.createdAt).toLocaleDateString('en-IN')}. Status: ${order.status}`
-    )
+    const msg = encodeURIComponent(`Hi, I'm ${customer?.name} (${customer?.phone}). Query about order #${order.id} for ${order.product?.name}. Status: ${order.status}`)
     window.open(`https://wa.me/918897132032?text=${msg}`)
   }
 
@@ -58,149 +50,168 @@ export default function CustomerPortalPage() {
 
   const totalSpent = orders.reduce((s, o) => s + (o.paidAmount || 0), 0)
   const totalBalance = orders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + Math.max(0, (o.totalPrice || 0) - (o.paidAmount || 0)), 0)
+  const filteredOrders = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
 
   return (
-    <div className="min-h-screen bg-green-50">
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+
       {/* Header */}
-      <div className="bg-green-800 text-white px-4 py-5">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+      <header style={{ background: '#166534', padding: '0 2rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 24 }}>🐐</span>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🐐</span>
-              <span className="font-bold text-lg">Kruthik Farm</span>
-            </div>
-            <p className="text-green-200 text-sm mt-0.5">Customer Portal</p>
-          </div>
-          <button onClick={handleLogout} className="text-green-300 text-sm hover:text-white">Logout →</button>
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
-        {/* Customer card */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-2xl font-bold text-green-800">
-              {customer.name?.[0]?.toUpperCase()}
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900">{customer.name}</h2>
-              <p className="text-gray-500 text-sm">📱 {customer.phone}</p>
-              {customer.address && <p className="text-gray-500 text-sm">📍 {customer.address}</p>}
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-100">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-800">{orders.length}</p>
-              <p className="text-xs text-gray-500">Orders</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-800">₹{totalSpent.toLocaleString('en-IN')}</p>
-              <p className="text-xs text-gray-500">Paid</p>
-            </div>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${totalBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                ₹{totalBalance.toLocaleString('en-IN')}
-              </p>
-              <p className="text-xs text-gray-500">Balance</p>
-            </div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#fff' }}>PashuBazaar</div>
+            <div style={{ fontSize: 11, color: '#86efac' }}>Customer Portal</div>
           </div>
         </div>
-
-        {/* Action buttons */}
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            onClick={() => router.push('/customer/shop')}
-            className="col-span-1 bg-green-700 text-white py-3 rounded-xl font-semibold text-sm flex flex-col items-center gap-1"
-          >
-            <span className="text-lg">🛒</span>
-            Shop Now
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ color: '#86efac', fontSize: 13 }}>Hi, <strong style={{ color: '#fff' }}>{customer.name}</strong></span>
+          <button onClick={() => router.push('/customer/shop')} style={{
+            background: '#fff', color: '#166534', border: 'none',
+            borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer'
+          }}>
+            🛒 Shop Now
           </button>
-          <button
-            onClick={() => window.open('tel:8897132032')}
-            className="bg-gray-100 text-gray-700 py-3 rounded-xl font-medium text-sm flex flex-col items-center gap-1"
-          >
-            <span className="text-lg">📞</span>
-            Call
-          </button>
-          <button
-            onClick={() => window.open(`https://wa.me/918897132032?text=${encodeURIComponent(`Hi, I'm ${customer.name} (${customer.phone}). Need help.`)}`)}
-            className="bg-emerald-50 text-emerald-700 py-3 rounded-xl font-medium text-sm flex flex-col items-center gap-1"
-          >
-            <span className="text-lg">💬</span>
-            WhatsApp
+          <button onClick={handleLogout} style={{
+            background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer'
+          }}>
+            Logout
           </button>
         </div>
+      </header>
 
-        {/* Orders */}
+      <main style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem', alignItems: 'start' }}>
+
+        {/* Left sidebar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          {/* Profile card */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#166534', flexShrink: 0 }}>
+                {customer.name?.[0]?.toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 17, color: '#111827' }}>{customer.name}</div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>📱 {customer.phone}</div>
+                {customer.address && <div style={{ fontSize: 13, color: '#6b7280' }}>📍 {customer.address}</div>}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, paddingTop: 16, borderTop: '1px solid #f3f4f6' }}>
+              {[
+                { val: orders.length, label: 'Orders' },
+                { val: `₹${totalSpent.toLocaleString('en-IN')}`, label: 'Paid' },
+                { val: `₹${totalBalance.toLocaleString('en-IN')}`, label: 'Balance', red: totalBalance > 0 },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: s.red ? '#dc2626' : '#166534' }}>{s.val}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick actions */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>Quick Actions</div>
+            {[
+              { icon: '🛒', label: 'Shop Products', sub: 'Browse & order', onClick: () => router.push('/customer/shop'), green: true },
+              { icon: '💬', label: 'WhatsApp Us', sub: 'Chat for support', onClick: () => window.open(`https://wa.me/918897132032?text=${encodeURIComponent(`Hi, I'm ${customer.name} (${customer.phone}). Need help.`)}`) },
+              { icon: '📞', label: 'Call Us', sub: '8897132032', onClick: () => window.open('tel:8897132032') },
+            ].map(a => (
+              <button key={a.label} onClick={a.onClick} style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                background: a.green ? '#f0fdf4' : '#f9fafb',
+                border: `1px solid ${a.green ? '#bbf7d0' : '#e5e7eb'}`,
+                borderRadius: 10, padding: '10px 12px', cursor: 'pointer', marginBottom: 8, textAlign: 'left'
+              }}>
+                <span style={{ fontSize: 20 }}>{a.icon}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: a.green ? '#166534' : '#374151' }}>{a.label}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>{a.sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right — orders */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-gray-700">Your Orders ({orders.length})</h3>
-            <button onClick={fetchOrders} className="text-xs text-green-700 font-medium">↻ Refresh</button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>Your Orders ({orders.length})</h2>
+            <button onClick={fetchOrders} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 14px', fontSize: 13, cursor: 'pointer', color: '#166534', fontWeight: 600 }}>↻ Refresh</button>
+          </div>
+
+          {/* Status filter tabs */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+            {['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].map(s => (
+              <button key={s} onClick={() => setFilter(s)} style={{
+                padding: '6px 16px', borderRadius: 20, border: '1px solid',
+                borderColor: filter === s ? '#166534' : '#e5e7eb',
+                background: filter === s ? '#166534' : '#fff',
+                color: filter === s ? '#fff' : '#6b7280',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer'
+              }}>{s === 'ALL' ? `All (${orders.length})` : STATUS[s]?.label}</button>
+            ))}
           </div>
 
           {loading ? (
-            <div className="bg-white rounded-2xl p-8 text-center text-gray-400">Loading...</div>
-          ) : orders.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-              <div className="text-4xl mb-2">📦</div>
-              <p className="text-gray-500 font-medium">No orders yet</p>
-              <p className="text-gray-400 text-sm mt-1 mb-4">Browse our products and place your first order</p>
-              <button
-                onClick={() => router.push('/customer/shop')}
-                className="bg-green-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm"
-              >
+            <div style={{ background: '#fff', borderRadius: 16, padding: '4rem', textAlign: 'center', color: '#9ca3af', border: '1px solid #e5e7eb' }}>Loading orders...</div>
+          ) : filteredOrders.length === 0 ? (
+            <div style={{ background: '#fff', borderRadius: 16, padding: '4rem', textAlign: 'center', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
+              <p style={{ color: '#374151', fontWeight: 600, fontSize: 16 }}>No orders yet</p>
+              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>Browse our products and place your first order</p>
+              <button onClick={() => router.push('/customer/shop')} style={{ background: '#166534', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                 🛒 Shop Now
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {orders.map((order) => {
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1rem' }}>
+              {filteredOrders.map(order => {
                 const s = STATUS[order.status] || STATUS.PENDING
                 const balance = Math.max(0, (order.totalPrice || 0) - (order.paidAmount || 0))
-
                 return (
-                  <div key={order.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{order.product?.category?.emoji || '📦'}</span>
+                  <div key={order.id} style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 28 }}>{order.product?.category?.emoji || '📦'}</span>
                         <div>
-                          <p className="font-semibold text-gray-900">{order.product?.name}</p>
-                          {order.product?.nameTelugu && <p className="text-xs text-gray-500">{order.product.nameTelugu}</p>}
+                          <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{order.product?.name}</div>
+                          {order.product?.nameTelugu && <div style={{ fontSize: 12, color: '#9ca3af' }}>{order.product.nameTelugu}</div>}
                         </div>
                       </div>
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${s.color}`}>{s.label}</span>
+                      <span style={{ background: s.bg, color: s.color, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+                        {s.label}
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                      <div>
-                        <p className="text-gray-400 text-xs">Quantity</p>
-                        <p className="font-medium">{order.quantity} {order.product?.unit}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs">Total</p>
-                        <p className="font-medium">₹{(order.totalPrice || 0).toLocaleString('en-IN')}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs">Paid</p>
-                        <p className="font-medium text-green-700">₹{(order.paidAmount || 0).toLocaleString('en-IN')}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs">Balance</p>
-                        <p className={`font-medium ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {balance > 0 ? `₹${balance.toLocaleString('en-IN')}` : '✓ Cleared'}
-                        </p>
-                      </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', fontSize: 13, marginBottom: 14 }}>
+                      {[
+                        { l: 'Quantity', v: `${order.quantity} ${order.product?.unit}` },
+                        { l: 'Total', v: `₹${(order.totalPrice || 0).toLocaleString('en-IN')}` },
+                        { l: 'Paid', v: `₹${(order.paidAmount || 0).toLocaleString('en-IN')}`, green: true },
+                        { l: 'Balance', v: balance > 0 ? `₹${balance.toLocaleString('en-IN')}` : '✓ Cleared', red: balance > 0, green: balance === 0 },
+                      ].map(f => (
+                        <div key={f.l}>
+                          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>{f.l}</div>
+                          <div style={{ fontWeight: 600, color: f.red ? '#dc2626' : f.green ? '#166534' : '#111827' }}>{f.v}</div>
+                        </div>
+                      ))}
                     </div>
 
                     {order.note && (
-                      <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mb-3">📝 {order.note}</p>
+                      <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
+                        📝 {order.note}
+                      </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-400">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
+                      <span style={{ fontSize: 12, color: '#9ca3af' }}>
                         {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </p>
-                      <button onClick={() => whatsApp(order)} className="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg font-medium">
+                      </span>
+                      <button onClick={() => whatsApp(order)} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                         💬 Query
                       </button>
                     </div>
@@ -210,9 +221,7 @@ export default function CustomerPortalPage() {
             </div>
           )}
         </div>
-
-        <p className="text-center text-xs text-gray-400 pb-6">Kruthik Farm · Goat Farm · 📞 8897132032</p>
-      </div>
+      </main>
     </div>
   )
 }

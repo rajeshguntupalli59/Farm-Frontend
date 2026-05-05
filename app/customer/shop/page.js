@@ -8,16 +8,16 @@ export default function CustomerShopPage() {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [catFilter, setCatFilter] = useState('')
+  const [search, setSearch] = useState('')
   const [customer, setCustomer] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [orderModal, setOrderModal] = useState(null) // product being ordered
+  const [orderModal, setOrderModal] = useState(null)
   const [qty, setQty] = useState('1')
   const [note, setNote] = useState('')
   const [placing, setPlacing] = useState(false)
-  const [success, setSuccess] = useState(null)
+  const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
     const token = localStorage.getItem('customerToken')
     const data = localStorage.getItem('customerData')
     if (!token || !data) { router.replace('/customer'); return }
@@ -36,184 +36,170 @@ export default function CustomerShopPage() {
         if (p.category && !seen.has(p.category.id)) { seen.add(p.category.id); cats.push(p.category) }
       })
       setCategories(cats)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
-  const filtered = catFilter ? products.filter(p => p.category?.id?.toString() === catFilter) : products
+  const filtered = products
+    .filter(p => !catFilter || p.category?.id?.toString() === catFilter)
+    .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
 
-  const openOrder = (product) => {
-    setOrderModal(product)
-    setQty('1')
-    setNote('')
-    setSuccess(null)
-  }
+  const openOrder = (product) => { setOrderModal(product); setQty('1'); setNote('') }
 
   const handlePlaceOrder = async () => {
     if (!qty || parseFloat(qty) <= 0) return
     setPlacing(true)
     try {
       await placeCustomerOrder({ productId: orderModal.id, quantity: parseFloat(qty), note: note.trim() || undefined })
-      setSuccess(orderModal)
+      setSuccessMsg(`Order placed for ${orderModal.name}! We'll confirm soon.`)
       setOrderModal(null)
+      setTimeout(() => setSuccessMsg(''), 5000)
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to place order. Try again.')
-    } finally {
-      setPlacing(false)
-    }
+      alert(err.response?.data?.message || 'Failed to place order.')
+    } finally { setPlacing(false) }
   }
 
   const total = orderModal ? (orderModal.price * (parseFloat(qty) || 0)).toFixed(2) : 0
 
-  if (loading) return (
-    <div className="min-h-screen bg-green-50 flex items-center justify-center">
-      <p className="text-green-800 font-medium">Loading products...</p>
-    </div>
-  )
-
   return (
-    <div className="min-h-screen bg-green-50">
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+
       {/* Header */}
-      <div className="bg-green-800 text-white px-4 py-5 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+      <header style={{ background: '#166634', padding: '0 2rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: '#166534' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={() => router.push('/customer/portal')} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            ← Back
+          </button>
           <div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/customer/portal')} className="text-green-300 text-sm mr-1">← Back</button>
-              <span className="font-bold text-lg">🛒 Shop</span>
-            </div>
-            <p className="text-green-200 text-xs mt-0.5">{products.length} products available</p>
-          </div>
-          <div className="text-right">
-            <p className="text-green-200 text-xs">Hi,</p>
-            <p className="font-semibold text-sm">{customer?.name}</p>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#fff' }}>🛒 Shop</div>
+            <div style={{ fontSize: 11, color: '#86efac' }}>{products.length} products available</div>
           </div>
         </div>
-      </div>
+        <span style={{ color: '#86efac', fontSize: 13 }}>Hi, <strong style={{ color: '#fff' }}>{customer?.name}</strong></span>
+      </header>
 
-      {/* Category filter */}
-      {categories.length > 0 && (
-        <div className="bg-white border-b border-gray-100 overflow-x-auto">
-          <div className="flex gap-2 px-4 py-3 max-w-2xl mx-auto">
+      {/* Success banner */}
+      {successMsg && (
+        <div style={{ background: '#166534', color: '#fff', padding: '12px 2rem', fontSize: 14, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>✅ {successMsg}</span>
+          <button onClick={() => router.push('/customer/portal')} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>
+            View Orders →
+          </button>
+        </div>
+      )}
+
+      <main style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '2rem' }}>
+
+        {/* Search + filters */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            placeholder="🔍 Search products..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 200 }}
+          />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[{ id: '', name: 'All', emoji: '🔹' }, ...categories].map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setCatFilter(cat.id?.toString() || '')}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${catFilter === (cat.id?.toString() || '') ? 'bg-green-700 text-white border-green-700' : 'bg-gray-50 text-gray-600 border-gray-200'}`}
-              >
+              <button key={cat.id} onClick={() => setCatFilter(cat.id?.toString() || '')} style={{
+                padding: '7px 16px', borderRadius: 20, border: '1px solid',
+                borderColor: catFilter === (cat.id?.toString() || '') ? '#166534' : '#e5e7eb',
+                background: catFilter === (cat.id?.toString() || '') ? '#166534' : '#fff',
+                color: catFilter === (cat.id?.toString() || '') ? '#fff' : '#6b7280',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer'
+              }}>
                 {cat.emoji} {cat.name}
               </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Success banner */}
-      {success && (
-        <div className="bg-green-700 text-white px-4 py-3 text-sm flex items-center justify-between max-w-2xl mx-auto mt-3 rounded-xl">
-          <span>✅ Order placed for <strong>{success.name}</strong>! We'll confirm soon.</span>
-          <button onClick={() => router.push('/customer/portal')} className="text-green-200 font-semibold ml-3 text-xs">View Orders</button>
-        </div>
-      )}
-
-      {/* Products */}
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-3 pb-20">
-        {filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <div className="text-4xl mb-2">📦</div>
-            <p>No products in this category</p>
+        {/* Product grid */}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '5rem', color: '#9ca3af', fontSize: 18 }}>Loading products...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '5rem', color: '#9ca3af' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
+            <p style={{ fontSize: 16 }}>No products found</p>
           </div>
-        ) : filtered.map(product => (
-          <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            {product.photoUrl && (
-              <img src={product.photoUrl} alt={product.name} className="w-full h-44 object-cover" />
-            )}
-            {!product.photoUrl && (
-              <div className="w-full h-28 bg-green-50 flex items-center justify-center text-5xl">
-                {product.category?.emoji || '📦'}
-              </div>
-            )}
-            <div className="p-4">
-              <div className="flex items-start justify-between mb-1">
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900 text-base">{product.name}</p>
-                  {product.nameTelugu && <p className="text-gray-500 text-sm">{product.nameTelugu}</p>}
-                  <p className="text-gray-400 text-xs mt-0.5">{product.category?.emoji} {product.category?.name}</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+            {filtered.map(product => (
+              <div key={product.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
+                {product.photoUrl ? (
+                  <img src={product.photoUrl} alt={product.name} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: 140, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56 }}>
+                    {product.category?.emoji || '📦'}
+                  </div>
+                )}
+                <div style={{ padding: '1rem 1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{product.name}</div>
+                      {product.nameTelugu && <div style={{ fontSize: 12, color: '#9ca3af' }}>{product.nameTelugu}</div>}
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{product.category?.emoji} {product.category?.name}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', marginLeft: 8 }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#166534' }}>₹{product.price}</div>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>per {product.unit}</div>
+                    </div>
+                  </div>
+                  {product.description && (
+                    <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, marginBottom: 12, flex: 1 }}>{product.description}</p>
+                  )}
+                  <button
+                    onClick={() => openOrder(product)}
+                    style={{ width: '100%', background: '#166534', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 'auto' }}
+                  >
+                    🛒 Order Now
+                  </button>
                 </div>
-                <div className="text-right ml-3">
-                  <p className="text-xl font-bold text-green-800">₹{product.price}</p>
-                  <p className="text-gray-400 text-xs">per {product.unit}</p>
-                </div>
               </div>
-              {product.description && <p className="text-gray-500 text-sm mt-2 mb-3">{product.description}</p>}
-              <button
-                onClick={() => openOrder(product)}
-                className="w-full bg-green-700 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-green-800 transition"
-              >
-                🛒 Order Now
-              </button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )}
+      </main>
 
-      {/* Order Modal */}
+      {/* Order Modal — centered on desktop */}
       {orderModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setOrderModal(null)}>
-          <div className="bg-white rounded-t-2xl w-full max-w-lg mx-auto p-6 pb-8" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-3xl">{orderModal.category?.emoji || '📦'}</span>
-              <div>
-                <p className="font-bold text-gray-900">{orderModal.name}</p>
-                <p className="text-green-700 font-semibold">₹{orderModal.price} / {orderModal.unit}</p>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}
+          onClick={() => setOrderModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 480, padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 36 }}>{orderModal.category?.emoji || '📦'}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: '#111827' }}>{orderModal.name}</div>
+                  <div style={{ fontSize: 14, color: '#166534', fontWeight: 600 }}>₹{orderModal.price} / {orderModal.unit}</div>
+                </div>
               </div>
+              <button onClick={() => setOrderModal(null)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#9ca3af' }}>✕</button>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantity ({orderModal.unit})
-              </label>
-              <input
-                type="number"
-                value={qty}
-                onChange={e => setQty(e.target.value)}
-                min="0.1"
-                step="0.1"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
-                autoFocus
-              />
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Quantity ({orderModal.unit})</label>
+              <input type="number" value={qty} onChange={e => setQty(e.target.value)} min="0.1" step="0.1" autoFocus
+                style={{ width: '100%', boxSizing: 'border-box' }} />
             </div>
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
-              <input
-                type="text"
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                placeholder="Any special instructions..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Note <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+              <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="Any special instructions..."
+                style={{ width: '100%', boxSizing: 'border-box' }} />
             </div>
 
-            <div className="bg-green-50 rounded-xl p-4 mb-5 flex justify-between items-center">
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <p className="text-sm text-gray-600">Total Amount</p>
-                <p className="text-xs text-gray-400">Payment on delivery / via UPI</p>
+                <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Total Amount</div>
+                <div style={{ fontSize: 12, color: '#9ca3af' }}>Payment on delivery / UPI</div>
               </div>
-              <p className="text-2xl font-bold text-green-800">₹{total}</p>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#166534' }}>₹{total}</div>
             </div>
 
-            <div className="flex gap-3">
-              <button onClick={() => setOrderModal(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium">
-                Cancel
-              </button>
-              <button
-                onClick={handlePlaceOrder}
-                disabled={placing || !qty || parseFloat(qty) <= 0}
-                className="flex-2 flex-1 py-3 rounded-xl bg-green-700 text-white font-bold disabled:opacity-60 hover:bg-green-800 transition"
-              >
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setOrderModal(null)} className="btn-secondary" style={{ flex: 1, padding: '12px' }}>Cancel</button>
+              <button onClick={handlePlaceOrder} disabled={placing || !qty || parseFloat(qty) <= 0}
+                className="btn-primary" style={{ flex: 1, padding: '12px', fontSize: 15 }}>
                 {placing ? 'Placing...' : 'Confirm Order'}
               </button>
             </div>
