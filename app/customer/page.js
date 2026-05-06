@@ -6,6 +6,58 @@ import { BUSINESS_PHONE } from '../../lib/constants'
 
 const RESEND_WAIT = 30
 
+const getGreeting = () => {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+const BG_ICONS = [
+  // left strip
+  { icon: '🐐', top: '2%',   left: '1%',   size: 54, rotate: -15 },
+  { icon: '🌱', top: '8%',   left: '6%',   size: 30, rotate: 10  },
+  { icon: '🐓', top: '14%',  left: '0%',   size: 40, rotate: -8  },
+  { icon: '🥕', top: '20%',  left: '5%',   size: 34, rotate: 20  },
+  { icon: '🐑', top: '27%',  left: '0%',   size: 46, rotate: 8   },
+  { icon: '🌽', top: '34%',  left: '4%',   size: 42, rotate: -20 },
+  { icon: '🐄', top: '41%',  left: '0%',   size: 52, rotate: 5   },
+  { icon: '🥬', top: '48%',  left: '5%',   size: 36, rotate: -15 },
+  { icon: '🐇', top: '55%',  left: '0%',   size: 40, rotate: -10 },
+  { icon: '🍅', top: '62%',  left: '4%',   size: 34, rotate: 14  },
+  { icon: '🐔', top: '69%',  left: '0%',   size: 44, rotate: -5  },
+  { icon: '🥦', top: '76%',  left: '5%',   size: 38, rotate: 18  },
+  { icon: '🐐', top: '83%',  left: '0%',   size: 52, rotate: 12  },
+  { icon: '🌾', top: '90%',  left: '4%',   size: 44, rotate: -12 },
+  { icon: '🐾', top: '96%',  left: '1%',   size: 30, rotate: 0   },
+  // right strip
+  { icon: '🐑', top: '2%',   right: '1%',  size: 46, rotate: 12  },
+  { icon: '🍃', top: '8%',   right: '6%',  size: 30, rotate: -15 },
+  { icon: '🥕', top: '14%',  right: '0%',  size: 36, rotate: 20  },
+  { icon: '🐐', top: '21%',  right: '2%',  size: 54, rotate: -10 },
+  { icon: '🫑', top: '28%',  right: '5%',  size: 34, rotate: -18 },
+  { icon: '🐓', top: '35%',  right: '0%',  size: 42, rotate: 8   },
+  { icon: '🍆', top: '42%',  right: '4%',  size: 38, rotate: -8  },
+  { icon: '🐄', top: '49%',  right: '0%',  size: 52, rotate: 6   },
+  { icon: '🌿', top: '56%',  right: '5%',  size: 32, rotate: 15  },
+  { icon: '🐇', top: '63%',  right: '0%',  size: 40, rotate: -12 },
+  { icon: '🥑', top: '70%',  right: '4%',  size: 34, rotate: 20  },
+  { icon: '🌾', top: '77%',  right: '0%',  size: 46, rotate: -6  },
+  { icon: '🐔', top: '84%',  right: '5%',  size: 40, rotate: 10  },
+  { icon: '🥦', top: '91%',  right: '0%',  size: 38, rotate: -15 },
+  { icon: '🌱', top: '97%',  right: '3%',  size: 28, rotate: 5   },
+  // top row
+  { icon: '🥚', top: '1%',   left: '20%',  size: 28, rotate: -10 },
+  { icon: '🐾', top: '2%',   left: '35%',  size: 26, rotate: 15  },
+  { icon: '🌻', top: '1%',   left: '55%',  size: 32, rotate: -5  },
+  { icon: '🍋', top: '2%',   left: '70%',  size: 28, rotate: 12  },
+  // bottom row
+  { icon: '🌻', bottom: '2%', left: '20%', size: 32, rotate: 8   },
+  { icon: '🥚', bottom: '1%', left: '38%', size: 28, rotate: -12 },
+  { icon: '🍋', bottom: '2%', left: '58%', size: 30, rotate: 18  },
+  { icon: '🐾', bottom: '1%', left: '74%', size: 26, rotate: -8  },
+]
+
 export default function CustomerAuthPage() {
   const router = useRouter()
   const [tab, setTab] = useState('login')
@@ -16,6 +68,7 @@ export default function CustomerAuthPage() {
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [greeting] = useState(getGreeting())
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -83,48 +136,50 @@ export default function CustomerAuthPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg, #f0fdf4 0%, #dcfce7 55%, #bbf7d0 100%)' }}>
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(22px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        .fade-up { animation: slideUp 0.45s ease both; }
+        .fade-up-delay { animation: slideUp 0.45s ease 0.1s both; }
+      `}</style>
 
       {/* Top bar */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 2rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <header style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(6px)', borderBottom: '1px solid #bbf7d0', padding: '0 2rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 26 }}>🐐</span>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#14532d' }}>KRUTHIK FARM</span>
         </div>
-        <a href="/" style={{ fontSize: 13, color: '#166534', fontWeight: 600, textDecoration: 'none' }}>← Back to Home</a>
+        <span />
       </header>
 
-      <main style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', maxWidth: 1000, width: '100%', margin: '0 auto', padding: '4rem 2rem', gap: '4rem', alignItems: 'center' }}>
+      <main style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', overflow: 'hidden' }}>
 
-        {/* Left — branding */}
-        <div>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>🛒</div>
-          <h1 style={{ fontSize: 34, fontWeight: 900, color: '#14532d', margin: '0 0 12px', lineHeight: 1.2 }}>
-            Customer Portal
-          </h1>
-          <p style={{ fontSize: 16, color: '#6b7280', lineHeight: 1.7, marginBottom: 32 }}>
-            Order fresh goat, sheep & farm products directly from KRUTHIK FARM. Register with your phone number — no passwords needed.
-          </p>
-          {[
-            { icon: '🥩', text: 'Fresh meat & livestock' },
-            { icon: '🚚', text: 'Home delivery available' },
-            { icon: '💬', text: 'WhatsApp support' },
-            { icon: '📱', text: 'Track your orders live' },
-          ].map(f => (
-            <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <span style={{ fontSize: 20 }}>{f.icon}</span>
-              <span style={{ fontSize: 14, color: '#374151', fontWeight: 500 }}>{f.text}</span>
-            </div>
-          ))}
-          <div style={{ marginTop: 32, padding: '14px 20px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
-            <p style={{ fontSize: 13, color: '#166534', fontWeight: 600, margin: 0 }}>
-              📞 Need help? Call us at <a href="tel:${BUSINESS_PHONE}" style={{ color: '#166534' }}>${BUSINESS_PHONE}</a>
-            </p>
+        {/* Decorative background icons */}
+        {BG_ICONS.map((item, i) => (
+          <div key={i} style={{
+            position: 'absolute',
+            top: item.top, left: item.left, right: item.right, bottom: item.bottom,
+            fontSize: item.size, opacity: 0.25,
+            transform: `rotate(${item.rotate}deg)`,
+            pointerEvents: 'none', userSelect: 'none', lineHeight: 1,
+          }}>{item.icon}</div>
+        ))}
+
+        {/* Branding */}
+        <div className="fade-up" style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontSize: 13, color: '#166534', fontWeight: 600, marginBottom: 14, letterSpacing: 1 }}>
+            {greeting} 👋
           </div>
+          <div style={{ fontSize: 56, marginBottom: 8 }}>🐐</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#14532d', letterSpacing: 1 }}>KRUTHIK FARM</div>
+          <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>కృతిక్ ఫార్మ్</div>
         </div>
 
-        {/* Right — form */}
-        <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        {/* Form card */}
+        <div className="fade-up-delay" style={{ background: '#fff', borderRadius: 20, boxShadow: '0 8px 40px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', width: '100%', maxWidth: 420 }}>
           {/* Tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid #f3f4f6' }}>
             {[['login', 'Login'], ['register', 'Create Account']].map(([key, label]) => (
@@ -151,10 +206,10 @@ export default function CustomerAuthPage() {
                   {loading ? 'Logging in...' : 'Login →'}
                 </button>
                 <p style={{ textAlign: 'center', fontSize: 13, color: '#9ca3af', marginTop: 16 }}>
-                  New customer?{' '}
-                  <button type="button" onClick={() => switchTab('register')} style={{ background: 'none', border: 'none', color: '#166534', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
-                    Create account →
-                  </button>
+                  Need help?{' '}
+                  <a href={`tel:${BUSINESS_PHONE}`} style={{ color: '#166534', fontWeight: 700, textDecoration: 'none' }}>
+                    📞 {BUSINESS_PHONE}
+                  </a>
                 </p>
               </form>
             )}
@@ -210,8 +265,10 @@ export default function CustomerAuthPage() {
         </div>
       </main>
 
-      <footer style={{ textAlign: 'center', padding: '1.25rem', color: '#9ca3af', fontSize: 13, borderTop: '1px solid #f3f4f6' }}>
+      <footer style={{ textAlign: 'center', padding: '1.25rem', color: '#9ca3af', fontSize: 13 }}>
         KRUTHIK FARM © 2025 · India
+        <span style={{ margin: '0 10px' }}>·</span>
+        <a href="/admin" style={{ color: '#d1d5db', fontSize: 12, textDecoration: 'none' }}>Staff Login</a>
       </footer>
     </div>
   )

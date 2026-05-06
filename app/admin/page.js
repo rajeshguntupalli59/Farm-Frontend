@@ -32,6 +32,12 @@ export default function AdminLoginPage() {
     <div style={{ minHeight: '100vh', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: 340, border: '1px solid #e5e7eb', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
 
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 44, marginBottom: 8 }}>🐐</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#14532d' }}>KRUTHIK FARM</div>
+          <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4, fontWeight: 600 }}>Staff Login</div>
+        </div>
+
         {error && (
           <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>
             {error}
