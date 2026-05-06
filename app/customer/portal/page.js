@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { getMyOrders, cancelMyOrder, placeCustomerOrder, getSettings, getMyBookings, cancelBooking, addReview } from '../../../lib/api'
 
@@ -11,6 +11,9 @@ const STATUS = {
   COMPLETED:  { label: 'Completed',  color: '#166534', bg: '#dcfce7' },
   CANCELLED:  { label: 'Cancelled',  color: '#dc2626', bg: '#fee2e2' },
 }
+
+const ACTIVE_STATUSES = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED']
+const HISTORY_STATUSES = ['COMPLETED', 'CANCELLED']
 
 const PROGRESS_STEPS = [
   { key: 'PENDING',    label: 'Placed' },
@@ -35,21 +38,14 @@ function OrderProgressBar({ status }) {
         return (
           <div key={step.key} style={{ flex: isLast ? 0 : 1, display: 'flex', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{
-                width: 24, height: 24, borderRadius: '50%',
-                background: done ? '#166534' : '#e5e7eb',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, color: '#fff', fontWeight: 800,
-              }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: done ? '#166534' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 800 }}>
                 {done ? '✓' : ''}
               </div>
               <span style={{ fontSize: 10, color: done ? '#166534' : '#9ca3af', marginTop: 4, fontWeight: done ? 700 : 400, textAlign: 'center', whiteSpace: 'nowrap' }}>
                 {step.label}
               </span>
             </div>
-            {!isLast && (
-              <div style={{ flex: 1, height: 2, background: idx < currentIdx ? '#166534' : '#e5e7eb', marginTop: 11, minWidth: 16 }} />
-            )}
+            {!isLast && <div style={{ flex: 1, height: 2, background: idx < currentIdx ? '#166534' : '#e5e7eb', marginTop: 11, minWidth: 16 }} />}
           </div>
         )
       })}
@@ -62,11 +58,12 @@ export default function CustomerPortalPage() {
   const [customer, setCustomer] = useState(null)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('ALL')
+  const [tab, setTab] = useState('active')
+  const [search, setSearch] = useState('')
   const [settings, setSettings] = useState({ whatsapp_number: '918897132032', business_phone: '8897132032' })
   const [lang, setLang] = useState('en')
   const [bookings, setBookings] = useState([])
-  const [reviewModal, setReviewModal] = useState(null) // order being reviewed
+  const [reviewModal, setReviewModal] = useState(null)
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewComment, setReviewComment] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
@@ -101,18 +98,13 @@ export default function CustomerPortalPage() {
 
   const handleCancel = async (orderId) => {
     if (!confirm('Cancel this order?')) return
-    try {
-      await cancelMyOrder(orderId)
-      fetchOrders()
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to cancel order')
-    }
+    try { await cancelMyOrder(orderId); fetchOrders() }
+    catch (err) { alert(err.response?.data?.message || 'Failed to cancel order') }
   }
 
   const toggleLang = () => {
     const next = lang === 'en' ? 'te' : 'en'
-    setLang(next)
-    localStorage.setItem('lang', next)
+    setLang(next); localStorage.setItem('lang', next)
   }
 
   const handleCancelBooking = async (bookingId) => {
@@ -120,9 +112,7 @@ export default function CustomerPortalPage() {
     try {
       await cancelBooking(bookingId)
       setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'CANCELLED' } : b))
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to cancel booking')
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Failed to cancel booking') }
   }
 
   const handleSubmitReview = async () => {
@@ -130,15 +120,10 @@ export default function CustomerPortalPage() {
     setSubmittingReview(true)
     try {
       await addReview({ productId: reviewModal.product.id, rating: reviewRating, comment: reviewComment })
-      setReviewModal(null)
-      setReviewRating(5)
-      setReviewComment('')
+      setReviewModal(null); setReviewRating(5); setReviewComment('')
       alert('✅ Review submitted! Thank you.')
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to submit review')
-    } finally {
-      setSubmittingReview(false)
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Failed to submit review') }
+    finally { setSubmittingReview(false) }
   }
 
   const handleReorder = async (order) => {
@@ -147,21 +132,40 @@ export default function CustomerPortalPage() {
       await placeCustomerOrder({ productId: order.product.id, quantity: order.quantity, note: 'Repeat order' })
       alert(`✅ Reorder placed for ${order.product?.name}!`)
       fetchOrders()
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reorder.')
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Failed to reorder.') }
   }
 
-  const whatsApp = (order) => {
-    const msg = encodeURIComponent(`Hi, I'm ${customer?.name} (${customer?.phone}). Query about order #${order.id} for ${order.product?.name}. Status: ${order.status}`)
-    window.open(`https://wa.me/${settings.whatsapp_number}?text=${msg}`)
-  }
+  const whatsApp = (msg) => window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(msg)}`)
 
-  if (!customer) return null
-
+  // Derived values
   const totalSpent = orders.reduce((s, o) => s + (o.paidAmount || 0), 0)
   const totalBalance = orders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + Math.max(0, (o.totalPrice || 0) - (o.paidAmount || 0)), 0)
-  const filteredOrders = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
+  const pendingBalanceOrders = orders.filter(o => o.status !== 'CANCELLED' && (o.totalPrice || 0) - (o.paidAmount || 0) > 0)
+
+  // Buy Again — products with 2+ completed orders, sorted by frequency
+  const buyAgainProducts = useMemo(() => {
+    const freq = {}
+    orders.filter(o => o.status === 'COMPLETED' && o.product?.id).forEach(o => {
+      const id = o.product.id
+      if (!freq[id]) freq[id] = { product: o.product, count: 0, lastOrder: o }
+      freq[id].count++
+    })
+    return Object.values(freq).sort((a, b) => b.count - a.count).slice(0, 5)
+  }, [orders])
+
+  // Filtered + searched orders
+  const tabFiltered = orders.filter(o =>
+    tab === 'active' ? ACTIVE_STATUSES.includes(o.status) :
+    tab === 'history' ? HISTORY_STATUSES.includes(o.status) : true
+  )
+  const filteredOrders = search.trim()
+    ? tabFiltered.filter(o => o.product?.name?.toLowerCase().includes(search.toLowerCase()))
+    : tabFiltered
+
+  const activeCount = orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length
+  const historyCount = orders.filter(o => HISTORY_STATUSES.includes(o.status)).length
+
+  if (!customer) return null
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
@@ -180,16 +184,10 @@ export default function CustomerPortalPage() {
           <button onClick={toggleLang} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
             {lang === 'en' ? 'తె' : 'EN'}
           </button>
-          <button onClick={() => router.push('/customer/shop')} style={{
-            background: '#fff', color: '#166534', border: 'none',
-            borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer'
-          }}>
+          <button onClick={() => router.push('/customer/shop')} style={{ background: '#fff', color: '#166534', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             🛒 Shop Now
           </button>
-          <button onClick={handleLogout} style={{
-            background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer'
-          }}>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>
             Logout
           </button>
         </div>
@@ -226,18 +224,40 @@ export default function CustomerPortalPage() {
             </div>
           </div>
 
+          {/* Pay All Balance */}
+          {totalBalance > 0 && (
+            <div style={{ background: '#fff7ed', borderRadius: 16, padding: '1.25rem', border: '1px solid #fed7aa', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>💳 Outstanding Balance</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#dc2626', marginBottom: 12 }}>₹{totalBalance.toLocaleString('en-IN')}</div>
+              <button
+                onClick={() => whatsApp(`Hi, I'm ${customer.name} (${customer.phone}). I'd like to clear my total outstanding balance of ₹${totalBalance.toLocaleString('en-IN')}. Please share payment details.`)}
+                style={{ width: '100%', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>
+                💬 Pay All Balance →
+              </button>
+              {/* Balance breakdown */}
+              <div style={{ borderTop: '1px solid #fed7aa', paddingTop: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', marginBottom: 8 }}>Breakdown</div>
+                {pendingBalanceOrders.map(o => (
+                  <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#374151', marginBottom: 5 }}>
+                    <span style={{ color: '#6b7280' }}>{o.product?.name || 'Order #' + o.id}</span>
+                    <span style={{ fontWeight: 700, color: '#dc2626' }}>₹{((o.totalPrice || 0) - (o.paidAmount || 0)).toLocaleString('en-IN')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quick actions */}
           <div style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>Quick Actions</div>
             {[
               { icon: '🛒', label: 'Shop Products', sub: 'Browse & order', onClick: () => router.push('/customer/shop'), green: true },
-              { icon: '💬', label: 'WhatsApp Us', sub: 'Chat for support', onClick: () => window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(`Hi, I'm ${customer.name} (${customer.phone}). Need help.`)}`) },
+              { icon: '💬', label: 'WhatsApp Us', sub: 'Chat for support', onClick: () => whatsApp(`Hi, I'm ${customer.name} (${customer.phone}). Need help.`) },
               { icon: '📞', label: 'Call Us', sub: settings.business_phone, onClick: () => window.open(`tel:${settings.business_phone}`) },
             ].map(a => (
               <button key={a.label} onClick={a.onClick} style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                background: a.green ? '#f0fdf4' : '#f9fafb',
-                border: `1px solid ${a.green ? '#bbf7d0' : '#e5e7eb'}`,
+                background: a.green ? '#f0fdf4' : '#f9fafb', border: `1px solid ${a.green ? '#bbf7d0' : '#e5e7eb'}`,
                 borderRadius: 10, padding: '10px 12px', cursor: 'pointer', marginBottom: 8, textAlign: 'left'
               }}>
                 <span style={{ fontSize: 20 }}>{a.icon}</span>
@@ -252,21 +272,56 @@ export default function CustomerPortalPage() {
 
         {/* Right — orders */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+
+          {/* Buy Again */}
+          {buyAgainProducts.length > 0 && (
+            <div style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#111827', marginBottom: 12 }}>🔁 Buy Again</div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {buyAgainProducts.map(({ product, count, lastOrder }) => (
+                  <button key={product.id}
+                    onClick={() => handleReorder(lastOrder)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', cursor: 'pointer', textAlign: 'left' }}>
+                    <span style={{ fontSize: 22 }}>{product.category?.emoji || '📦'}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>{product.name}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>Ordered {count}×</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Header + search */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', gap: 12, flexWrap: 'wrap' }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>Your Orders ({orders.length})</h2>
-            <button onClick={fetchOrders} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 14px', fontSize: 13, cursor: 'pointer', color: '#166534', fontWeight: 600 }}>↻ Refresh</button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <input
+                type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="🔍 Search orders..."
+                style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: '7px 14px', fontSize: 13, outline: 'none', width: 200 }}
+              />
+              <button onClick={fetchOrders} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 14px', fontSize: 13, cursor: 'pointer', color: '#166534', fontWeight: 600 }}>↻</button>
+            </div>
           </div>
 
-          {/* Status filter tabs */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-            {['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].map(s => (
-              <button key={s} onClick={() => setFilter(s)} style={{
-                padding: '6px 16px', borderRadius: 20, border: '1px solid',
-                borderColor: filter === s ? '#166534' : '#e5e7eb',
-                background: filter === s ? '#166534' : '#fff',
-                color: filter === s ? '#fff' : '#6b7280',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer'
-              }}>{s === 'ALL' ? `All (${orders.length})` : STATUS[s]?.label}</button>
+          {/* Tabs: Active / History / All */}
+          <div style={{ display: 'flex', gap: 0, marginBottom: '1.25rem', borderBottom: '2px solid #f3f4f6' }}>
+            {[
+              { key: 'active', label: `Active`, count: activeCount, color: '#166534' },
+              { key: 'history', label: `History`, count: historyCount, color: '#6b7280' },
+              { key: 'all', label: `All`, count: orders.length, color: '#374151' },
+            ].map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)} style={{
+                padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                background: 'none', border: 'none',
+                borderBottom: tab === t.key ? `2px solid ${t.color}` : '2px solid transparent',
+                color: tab === t.key ? t.color : '#9ca3af',
+                marginBottom: -2,
+              }}>
+                {t.label} <span style={{ fontSize: 12, fontWeight: 600, background: tab === t.key ? '#f0fdf4' : '#f3f4f6', borderRadius: 10, padding: '2px 7px', marginLeft: 4 }}>{t.count}</span>
+              </button>
             ))}
           </div>
 
@@ -275,11 +330,8 @@ export default function CustomerPortalPage() {
           ) : filteredOrders.length === 0 ? (
             <div style={{ background: '#fff', borderRadius: 16, padding: '4rem', textAlign: 'center', border: '1px solid #e5e7eb' }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
-              <p style={{ color: '#374151', fontWeight: 600, fontSize: 16 }}>No orders yet</p>
-              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>Browse our products and place your first order</p>
-              <button onClick={() => router.push('/customer/shop')} style={{ background: '#166534', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                🛒 Shop Now
-              </button>
+              <p style={{ color: '#374151', fontWeight: 600, fontSize: 16 }}>{search ? 'No orders match your search' : 'No orders here'}</p>
+              {!search && <button onClick={() => router.push('/customer/shop')} style={{ background: '#166534', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 16 }}>🛒 Shop Now</button>}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1rem' }}>
@@ -287,7 +339,7 @@ export default function CustomerPortalPage() {
                 const s = STATUS[order.status] || STATUS.PENDING
                 const balance = Math.max(0, (order.totalPrice || 0) - (order.paidAmount || 0))
                 return (
-                  <div key={order.id} style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <div key={order.id} style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: `1px solid ${order.status === 'CANCELLED' ? '#fecaca' : order.status === 'COMPLETED' ? '#bbf7d0' : '#e5e7eb'}`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                     <OrderProgressBar status={order.status} />
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -321,9 +373,7 @@ export default function CustomerPortalPage() {
                     </div>
 
                     {order.note && (
-                      <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
-                        📝 {order.note}
-                      </div>
+                      <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#6b7280', marginBottom: 12 }}>📝 {order.note}</div>
                     )}
 
                     <div style={{ paddingTop: 12, borderTop: '1px solid #f3f4f6' }}>
@@ -331,7 +381,7 @@ export default function CustomerPortalPage() {
                         {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button onClick={() => whatsApp(order)} style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        <button onClick={() => whatsApp(`Hi, I'm ${customer?.name} (${customer?.phone}). Query about order #${order.id} for ${order.product?.name}. Status: ${order.status}`)} style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                           💬 Query
                         </button>
                         {order.shipment?.trackingCode && (
@@ -409,9 +459,7 @@ export default function CustomerPortalPage() {
               <div style={{ fontWeight: 800, fontSize: 18, color: '#14532d' }}>⭐ Leave a Review</div>
               <button onClick={() => setReviewModal(null)} style={{ background: 'none', border: 'none', fontSize: 22, color: '#9ca3af', cursor: 'pointer' }}>✕</button>
             </div>
-            <div style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
-              {reviewModal.product?.category?.emoji || '📦'} {reviewModal.product?.name}
-            </div>
+            <div style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>{reviewModal.product?.category?.emoji || '📦'} {reviewModal.product?.name}</div>
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Your Rating *</div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -422,13 +470,8 @@ export default function CustomerPortalPage() {
             </div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Comment (optional)</div>
-              <textarea
-                value={reviewComment}
-                onChange={e => setReviewComment(e.target.value)}
-                placeholder="How was your experience?"
-                rows={3}
-                style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 14, resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-              />
+              <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} placeholder="How was your experience?" rows={3}
+                style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 14, resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setReviewModal(null)} style={{ flex: 1, background: '#f3f4f6', border: 'none', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancel</button>
