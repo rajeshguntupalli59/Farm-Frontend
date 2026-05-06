@@ -187,7 +187,7 @@ export default function WelcomePage() {
 
       {/* Footer */}
       <footer style={{ textAlign: 'center', padding: '1.25rem', color: '#9ca3af', fontSize: 13, borderTop: '1px solid #f3f4f6' }}>
-        పశుబజార్ © 2025 • Kruthik Farm • India
+        KRUTHIK FARM © 2025 · India
       </footer>
     </div>
   )

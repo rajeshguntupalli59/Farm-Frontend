@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { customerLogin, sendOtp, verifyOtp } from '../../lib/api'
+import { BUSINESS_PHONE } from '../../lib/constants'
 
 const RESEND_WAIT = 30
 
@@ -88,7 +89,7 @@ export default function CustomerAuthPage() {
       <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 2rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 26 }}>🐐</span>
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#14532d' }}>PashuBazaar</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#14532d' }}>KRUTHIK FARM</span>
         </div>
         <a href="/" style={{ fontSize: 13, color: '#166534', fontWeight: 600, textDecoration: 'none' }}>← Back to Home</a>
       </header>
@@ -102,7 +103,7 @@ export default function CustomerAuthPage() {
             Customer Portal
           </h1>
           <p style={{ fontSize: 16, color: '#6b7280', lineHeight: 1.7, marginBottom: 32 }}>
-            Order fresh goat, sheep & farm products directly from Kruthik Farm. Register with your phone number — no passwords needed.
+            Order fresh goat, sheep & farm products directly from KRUTHIK FARM. Register with your phone number — no passwords needed.
           </p>
           {[
             { icon: '🥩', text: 'Fresh meat & livestock' },
@@ -117,7 +118,7 @@ export default function CustomerAuthPage() {
           ))}
           <div style={{ marginTop: 32, padding: '14px 20px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
             <p style={{ fontSize: 13, color: '#166534', fontWeight: 600, margin: 0 }}>
-              📞 Need help? Call us at <a href="tel:8897132032" style={{ color: '#166534' }}>8897132032</a>
+              📞 Need help? Call us at <a href="tel:${BUSINESS_PHONE}" style={{ color: '#166534' }}>${BUSINESS_PHONE}</a>
             </p>
           </div>
         </div>
@@ -210,7 +211,7 @@ export default function CustomerAuthPage() {
       </main>
 
       <footer style={{ textAlign: 'center', padding: '1.25rem', color: '#9ca3af', fontSize: 13, borderTop: '1px solid #f3f4f6' }}>
-        PashuBazaar © 2025 · Kruthik Farm · India
+        KRUTHIK FARM © 2025 · India
       </footer>
     </div>
   )

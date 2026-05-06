@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getOrders, createOrder, updateOrder, getCustomers, getProducts, getInvoiceUrl, getUPIQR } from '../../lib/api'
+import { UPI_ID } from '../../lib/constants'
 import { getToken, getUser } from '../../lib/auth'
 import { useLang } from '../../lib/lang'
 import Navbar from '../components/Navbar'
@@ -100,7 +101,7 @@ export default function OrdersPage() {
   const sendWhatsApp = (o) => {
     const balance = (o.totalPrice || 0) - (o.paidAmount || 0)
     const product = o.product?.name || 'your order'
-    const msg = `Hi ${o.customer?.name}, your order for *${product}* (Qty: ${o.quantity}) is *${o.status}*.\nTotal: ₹${o.totalPrice} | Paid: ₹${o.paidAmount} | *Balance: ₹${balance}*\n\nPlease pay via UPI: *8897132032@sbi*\n\nThank you — Kruthik Farm 🐐`
+    const msg = `Hi ${o.customer?.name}, your order for *${product}* (Qty: ${o.quantity}) is *${o.status}*.\nTotal: ₹${o.totalPrice} | Paid: ₹${o.paidAmount} | *Balance: ₹${balance}*\n\nPlease pay via UPI: *${UPI_ID}*\n\nThank you — Kruthik Farm 🐐`
     const phone = o.customer?.phone?.replace(/\D/g, '')
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank')
   }

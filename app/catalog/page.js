@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react'
 import { getPublicProducts, getPublicAnimals, placePublicOrder } from '../../lib/api'
 import { useLang } from '../../lib/lang'
-
-const BUSINESS_PHONE = '8897132032'
+import { BUSINESS_PHONE } from '../../lib/constants'
 
 const ORDER_EMPTY = { customerName: '', customerPhone: '', quantity: 1, notes: '' }
 
