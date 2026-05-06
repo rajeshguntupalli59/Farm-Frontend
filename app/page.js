@@ -107,58 +107,6 @@ export default function WelcomePage() {
                 </button>
               </div>
 
-              {/* Staff card */}
-              <div style={{
-                background: '#fff', borderRadius: 20, padding: '2.5rem',
-                border: '1px solid #e5e7eb', boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-                display: 'flex', flexDirection: 'column'
-              }}>
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                  <div style={{ fontSize: 56, marginBottom: 16 }}>🔑</div>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, color: '#14532d', margin: '0 0 8px' }}>Staff Login</h2>
-                  <p style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.6 }}>Owner · Manager · Employee</p>
-                </div>
-
-                {error && (
-                  <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 14 }}>
-                    {error}
-                  </div>
-                )}
-
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-                    {t.phone}
-                  </label>
-                  <input
-                    type="tel" placeholder="10-digit mobile number"
-                    value={phone} onChange={e => setPhone(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleStaffLogin()}
-                    autoComplete="tel"
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-                    {t.password}
-                  </label>
-                  <input
-                    type="password" placeholder="••••••••"
-                    value={password} onChange={e => setPassword(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleStaffLogin()}
-                    autoComplete="current-password"
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
-                </div>
-
-                <button
-                  onClick={handleStaffLogin} disabled={loading}
-                  className="btn-primary"
-                  style={{ width: '100%', padding: '14px', fontSize: 15, borderRadius: 12, marginTop: 'auto' }}
-                >
-                  {loading ? 'Logging in...' : 'Login to Dashboard →'}
-                </button>
-              </div>
             </div>
 
             {/* Feature highlights */}
@@ -188,6 +136,8 @@ export default function WelcomePage() {
       {/* Footer */}
       <footer style={{ textAlign: 'center', padding: '1.25rem', color: '#9ca3af', fontSize: 13, borderTop: '1px solid #f3f4f6' }}>
         KRUTHIK FARM © 2025 · India
+        <span style={{ margin: '0 12px' }}>·</span>
+        <a href="/admin" style={{ color: '#d1d5db', textDecoration: 'none', fontSize: 12 }}>Staff</a>
       </footer>
     </div>
   )

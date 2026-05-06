@@ -12,6 +12,51 @@ const STATUS = {
   CANCELLED:  { label: 'Cancelled',  color: '#dc2626', bg: '#fee2e2' },
 }
 
+const PROGRESS_STEPS = [
+  { key: 'PENDING',    label: 'Placed' },
+  { key: 'CONFIRMED',  label: 'Confirmed' },
+  { key: 'PROCESSING', label: 'Preparing' },
+  { key: 'SHIPPED',    label: 'Shipped' },
+  { key: 'COMPLETED',  label: 'Delivered' },
+]
+
+function OrderProgressBar({ status }) {
+  if (status === 'CANCELLED') return (
+    <div style={{ background: '#fee2e2', borderRadius: 8, padding: '6px 12px', marginBottom: 12, textAlign: 'center', fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
+      ✕ Order Cancelled
+    </div>
+  )
+  const currentIdx = PROGRESS_STEPS.findIndex(s => s.key === status)
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 14 }}>
+      {PROGRESS_STEPS.map((step, idx) => {
+        const done = idx <= currentIdx
+        const isLast = idx === PROGRESS_STEPS.length - 1
+        return (
+          <div key={step.key} style={{ flex: isLast ? 0 : 1, display: 'flex', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%',
+                background: done ? '#166534' : '#e5e7eb',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, color: '#fff', fontWeight: 800,
+              }}>
+                {done ? '✓' : ''}
+              </div>
+              <span style={{ fontSize: 10, color: done ? '#166534' : '#9ca3af', marginTop: 4, fontWeight: done ? 700 : 400, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                {step.label}
+              </span>
+            </div>
+            {!isLast && (
+              <div style={{ flex: 1, height: 2, background: idx < currentIdx ? '#166534' : '#e5e7eb', marginTop: 11, minWidth: 16 }} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function CustomerPortalPage() {
   const router = useRouter()
   const [customer, setCustomer] = useState(null)
@@ -243,6 +288,7 @@ export default function CustomerPortalPage() {
                 const balance = Math.max(0, (order.totalPrice || 0) - (order.paidAmount || 0))
                 return (
                   <div key={order.id} style={{ background: '#fff', borderRadius: 16, padding: '1.25rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                    <OrderProgressBar status={order.status} />
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 28 }}>{order.product?.category?.emoji || '📦'}</span>
